@@ -16,7 +16,7 @@
   <uses-permission android:name="android.permission.health.READ_WEIGHT" />
   <uses-permission android:name="android.permission.health.READ_BODY_FAT" />
   <application
-    android:label="vivo健康连接检测"
+    android:label="vivo健康连接检测1.1"
     android:allowBackup="false"
     android:theme="@android:style/Theme.Material.Light.NoActionBar"
     android:usesCleartextTraffic="false">
