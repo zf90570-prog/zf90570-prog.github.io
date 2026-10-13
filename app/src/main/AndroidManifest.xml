@@ -26,5 +26,16 @@
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
     </activity>
+    <activity android:name="com.jianti.vivohealthprobe.PrivacyRationaleActivity" android:exported="false" />
+    <activity-alias
+      android:name="com.jianti.vivohealthprobe.ViewPermissionUsageActivity"
+      android:exported="true"
+      android:targetActivity="com.jianti.vivohealthprobe.PrivacyRationaleActivity"
+      android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+        <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+      </intent-filter>
+    </activity-alias>
   </application>
 </manifest>
