@@ -85,8 +85,10 @@ public class MainActivity extends Activity {
       addSpace(main,18);
       status=label("准备检测环境……",14,MINT);main.addView(status);addSpace(main,14);
       button("① 检测系统与 vivo 健康",true,this::environment);
-      button("② 请求健康数据读取授权",false,this::askPermission);
-      button("③ 读取最近30天（只读）",false,this::startScan);
+      button("② 授权核心3项（运动 / 心率 / 距离）",false,()->askPermission(false));
+      button("③ 授权其余9项（睡眠 / HRV 等）",false,()->askPermission(true));
+      button("④ 查看系统健康权限管理",false,this::openHealthSettings);
+      button("⑤ 读取最近30天（只读）",true,this::startScan);
       button("复制精简检测报告",false,this::copyReport);
       button("保存精简报告 .txt",false,this::exportReport);
       addCard("检测的12类数据","运动会话、心率、距离、静息心率、睡眠、HRV、步数、速度、活动热量、VO₂max、体重、体脂。\n\n游泳每趟时间、SWOLF、划水次数等 vivo 专有明细不一定通过标准接口共享。");
@@ -115,28 +117,46 @@ public class MainActivity extends Activity {
        .append("\nHealth Connect 系统服务：").append(health!=null?"可用":"不可用或受系统限制")
        .append("\n已授予读取权限：");
       int granted=0;for(String[] t:TYPES){if(checkSelfPermission(PREFIX+t[1])==PackageManager.PERMISSION_GRANTED)granted++;}
-      s.append(granted).append("/").append(TYPES.length);
+      s.append(granted).append("/").append(TYPES.length).append("\\n若未授权，请先点击②；若系统无弹窗，点击④检查授权页面。");
       s.append("\n\n这里只检测可用性，还未读取健康数据。\n");
       report=s.toString();reportText.setText(report);
     }
-    void askPermission(){
+    void askPermission(boolean extras){
       if(running)return;
       environment();
-      if(health==null){new AlertDialog.Builder(this).setTitle("公共健康接口不可用").setMessage("没有获取到系统 Health Connect 服务。\n\n这不代表 vivo 健康没有手表数据；它只表示当前无法通过此标准接口请求访问。").setPositiveButton("知道了",null).show();return;}
-      new AlertDialog.Builder(this).setTitle("请求读取权限（由你决定）")
-       .setMessage("本检测器只申请运动、心率、睡眠、HRV等12类只读权限，用于判断数据是否被共享。\n\n不会申请写入、网络、蓝牙、通讯录或文件权限，也不会上传数据。你可以只批准部分权限。")
-       .setNegativeButton("暂不授权",null)
-       .setPositiveButton("打开系统授权页",(d,w)->{
-         String[] p=new String[TYPES.length];for(int i=0;i<TYPES.length;i++)p[i]=PREFIX+TYPES[i][1];
-         try{requestPermissions(p,REQ_PERM);}
-         catch(Throwable e){status.setText("请求权限失败："+e.getClass().getSimpleName()+":"+e.getMessage());}
-       }).show();
+      if(health==null){new AlertDialog.Builder(this).setTitle("公共健康接口不可用").setMessage("没有获取到 Health Connect 服务，并不代表 vivo 健康中没有数据。").setPositiveButton("知道了",null).show();return;}
+      new AlertDialog.Builder(this).setTitle(extras?"读取扩展健康项目":"首先授权3项核心项目")
+        .setMessage(extras?"申请静息心率、睡眠、HRV、步数、速度、热量、VO₂max、体重、体脂等9项只读权限。可以选择部分授权。":"先只申请运动会话、心率、距离3项只读权限，帮助判断游泳数据能否自动获取。")
+        .setNegativeButton("取消",null).setPositiveButton("请求系统授权",(d,w)->{
+          String[] p;
+          if(extras){p=new String[TYPES.length-3];for(int i=3;i<TYPES.length;i++)p[i-3]=PREFIX+TYPES[i][1];}
+          else {p=new String[]{PREFIX+"READ_EXERCISE",PREFIX+"READ_HEART_RATE",PREFIX+"READ_DISTANCE"};}
+          try{requestPermissions(p,REQ_PERM);}
+          catch(Throwable e){status.setText("授权请求失败："+e.getClass().getSimpleName()+": "+e.getMessage());}
+        }).show();
+    }
+    void openHealthSettings(){
+      try{
+        Intent intent=new Intent(HealthConnectManager.ACTION_MANAGE_HEALTH_PERMISSIONS);
+        intent.putExtra(Intent.EXTRA_PACKAGE_NAME,getPackageName());
+        startActivity(intent);
+      }catch(Exception e){
+        try{startActivity(new Intent("android.health.connect.action.HEALTH_HOME_SETTINGS"));}
+        catch(Exception ex){new AlertDialog.Builder(this).setTitle("请在系统设置中打开")
+          .setMessage("系统设置 → 搜索「健康数据共享」或 Health Connect → 应用权限 → vivo健康连接检测。\n\n然后检查是否存在可授予的健康数据读取权限。")
+          .setPositiveButton("知道了",null).show();}
+      }
     }
     @Override public void onRequestPermissionsResult(int req,String[] p,int[] grants){
       super.onRequestPermissionsResult(req,p,grants);
-      if(req==REQ_PERM){environment();Toast.makeText(this,"授权窗口已返回；可开始读取",Toast.LENGTH_LONG).show();}
+      if(req==REQ_PERM){
+        environment();
+        int ok=0;for(int g:grants)if(g==PackageManager.PERMISSION_GRANTED)ok++;
+        status.setText("本次健康授权："+ok+"/"+p.length+" 项已允许；"+(ok==0?"如未弹出系统授权页，请试第④步":"可以开始第⑤步读取"));
+        Toast.makeText(this,"本次授权："+ok+"/"+p.length+" 项",Toast.LENGTH_LONG).show();
+      }
     }
-    static final class Counts{
+        static final class Counts{
       int n=0,samples=0,swim=0,laps=0;
       boolean truncated=false;
       LinkedHashSet<String> origins=new LinkedHashSet<>();
