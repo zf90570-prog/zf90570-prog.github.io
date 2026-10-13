@@ -1,13 +1,17 @@
-name: JianTi Android APK
+name: JianTi 4 Android Offline OCR
 on:
   push:
-    branches: [jianti-android-build]
+    branches: [jianti-v4-offline-ocr]
   workflow_dispatch:
 jobs:
   apk:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Expand locally authored Android project
+        run: |
+          base64 -d v4_payload.b64 > v4_source.zip
+          unzip -oq v4_source.zip
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -15,9 +19,9 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Build APK
+      - name: Build offline-ocr test APK
         run: gradle --no-daemon assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: JianTiTraining-APK
+          name: JianTi-v4-OCR-APK
           path: app/build/outputs/apk/debug/app-debug.apk
