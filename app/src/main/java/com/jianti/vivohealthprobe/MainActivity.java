@@ -157,7 +157,7 @@ public class MainActivity extends Activity {
       scanItem(0);
     }
     @SuppressWarnings("unchecked")
-    <T extends Record> void scanItem(int i){
+    <T extends android.health.connect.datatypes.Record> void scanItem(int i){
       if(i>=TYPES.length){finishScan();return;}
       String name=TYPES[i][0], permission=PREFIX+TYPES[i][1];
       if(checkSelfPermission(permission)!=PackageManager.PERMISSION_GRANTED){
@@ -173,11 +173,11 @@ public class MainActivity extends Activity {
         scanItem(i+1);
       }
     }
-    <T extends Record> void readPages(Class<T> type,int idx,Counts total,long token,int pages){
+    <T extends android.health.connect.datatypes.Record> void readPages(Class<T> type,int idx,Counts total,long token,int pages){
       try{
         ReadRecordsRequestUsingFilters.Builder<T> builder=new ReadRecordsRequestUsingFilters.Builder<>(type)
             .setTimeRangeFilter(new TimeInstantRangeFilter.Builder().setStartTime(Instant.now().minus(30,ChronoUnit.DAYS)).setEndTime(Instant.now()).build())
-            .setPageSize(500).setAscending(false);
+            .setPageSize(500);
         if(token!=-1)builder.setPageToken(token);
         health.readRecords(builder.build(),getMainExecutor(),new OutcomeReceiver<ReadRecordsResponse<T>,HealthConnectException>(){
           @Override public void onResult(ReadRecordsResponse<T> res){
