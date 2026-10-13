@@ -1,10 +1,10 @@
-name: JianTi Android APK
+name: JianTi Final Android Release
 on:
   push:
-    branches: [jianti-v2-ui]
+    branches: [jianti-final-3]
   workflow_dispatch:
 jobs:
-  apk:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,9 +15,12 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Build APK
-        run: gradle --no-daemon assembleDebug
-      - uses: actions/upload-artifact@v4
+      - name: Build unsigned release
+        run: gradle --no-daemon assembleRelease
+      - name: Zipalign
+        run: $ANDROID_HOME/build-tools/35.0.0/zipalign -f -p 4 app/build/outputs/apk/release/app-release-unsigned.apk app/build/outputs/apk/release/jianti-final-aligned.apk
+      - name: Publish unsigned APK artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: JianTiTraining-v2-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: JianTiFinal-Unsigned
+          path: app/build/outputs/apk/release/jianti-final-aligned.apk
