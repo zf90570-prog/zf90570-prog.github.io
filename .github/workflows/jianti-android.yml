@@ -19,9 +19,9 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Build offline-ocr test APK
-        run: gradle --no-daemon assembleDebug
+      - name: Build unsigned release APK
+        run: gradle --no-daemon assembleRelease
       - uses: actions/upload-artifact@v4
         with:
-          name: JianTi-v4-OCR-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: JianTi-v4-UnsignedRelease-APK
+          path: app/build/outputs/apk/release/app-release-unsigned.apk
