@@ -1,20 +1,30 @@
-name: JianTi 4.1 Offline OCR Repair
+name: JianTi 4.2 Strength Rebuild
 on:
   push:
-    branches: [jianti-v41-swim-ocr-fix]
+    branches: [jianti-v42-strength-reset]
   workflow_dispatch:
 jobs:
   apk:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Expand 4.0 original project and apply 4.1 fixes
+      - name: Expand 4.0 source and apply 4.1 OCR and 4.2 strength updates
         run: |
           base64 -d v4_payload.b64 > v4_source.zip
           unzip -oq v4_source.zip
           cp overrides/MainActivity.java app/src/main/java/com/fencing/athletic/MainActivity.java
           cp overrides/v4.js app/src/main/assets/v4.js
-          sed -i "s/versionCode 400/versionCode 410/;s/versionName '4.0.0'/versionName '4.1.0'/" app/build.gradle
+          cp overrides/training42.js app/src/main/assets/training42.js
+          python3 - <<'PY'
+          from pathlib import Path
+          f=Path('app/src/main/assets/index.html')
+          t=f.read_text()
+          t=t.replace('</body>','<script src="training42.js" defer></script></body>')
+          f.write_text(t)
+          manifest=Path('app/src/main/AndroidManifest.xml')
+          manifest.write_text(manifest.read_text().replace('剑体训练 4.0','剑体训练 4.2'))
+          PY
+          sed -i "s/versionCode 400/versionCode 420/;s/versionName '4.0.0'/versionName '4.2.0'/" app/build.gradle
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -23,10 +33,13 @@ jobs:
         with:
           gradle-version: '8.9'
       - name: Verify scripts
-        run: node --check app/src/main/assets/v4.js
-      - name: Build 4.1 unsigned release
+        run: |
+          node --check app/src/main/assets/v4.js
+          node --check app/src/main/assets/training42.js
+          node --check app/src/main/assets/app.js
+      - name: Build 4.2 unsigned release
         run: gradle --no-daemon assembleRelease
       - uses: actions/upload-artifact@v4
         with:
-          name: JianTi-v41-Unsigned-APK
+          name: JianTi-v42-Unsigned-APK
           path: app/build/outputs/apk/release/app-release-unsigned.apk
